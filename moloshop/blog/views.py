@@ -1,6 +1,6 @@
 # D:\Python\django\elvand\moloshop\blog\views.py
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.shortcuts import render
 
 def index(request):
@@ -11,8 +11,18 @@ def index(request):
 #     return HttpResponse(f"<h1>Статьи по категориям</h1>{catid}</p>")
 
 def categories(request, cat):
+    if (request.GET):
+        print(request.GET)
+
     return HttpResponse(f"<h1>Статьи по категориям</h1>{cat}</p>")
 
 
 def archive(request, year):
+    if (int(year) > 2023):
+        raise Http404()
+
     return HttpResponse(f"<h1>Архив по годам</h1>{year}</p>")
+
+
+def pageNotFound(request, exception):
+    return HttpResponseNotFound('<h1>Страница не найдена</h1>')
