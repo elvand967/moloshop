@@ -2,10 +2,17 @@
 
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.shortcuts import render, redirect
+from .models import *
 
+menu = ["О сайте", "Добавить статью", "Обратная связь", "Войти"]
 
 def index(request):
-    return HttpResponse("Страница приложения blog.")  # http://127.0.0.1:8000/blog/
+    posts = Blog.objects.all()
+    return render(request, 'blog/index.html', {'posts': posts, 'menu': menu, 'title': 'Главная страница'})
+
+
+def about(request):
+    return render(request, 'blog/about.html', {'menu': menu, 'title': 'О сайте'})
 
 
 # def categories(request, catid):
@@ -29,3 +36,6 @@ def archive(request, year):
 
 def pageNotFound(request, exception):
     return HttpResponseNotFound('<h1>Страница не найдена</h1>')
+
+
+
