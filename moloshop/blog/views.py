@@ -14,10 +14,14 @@ menu = [{'title': "О сайте", 'url_name': 'about'},
 
 def index(request):
     posts = Blog.objects.all()
+    cats = Category.objects.all()
+
     context = {
         'posts': posts,
+        'cats': cats,
         'menu': menu,
-        'title': 'Главная страница'
+        'title': 'Главная страница',
+        'cat_selected': 0,
     }
 
     return render(request, 'blog/index.html', context=context)
@@ -43,7 +47,24 @@ def categories(request, cat):
     if (request.GET):
         print(request.GET)
 
-    return HttpResponse(f"<h1>Статьи по категориям</h1>{cat}</p>")
+    return HttpResponse(f"<h1>Статьи по категориям {cat}</h1>")
+
+
+def show_category(request, cat_id):
+    posts = Blog.objects.filter(cat_id=cat_id)
+    if len(posts) == 0:
+        raise Http404()
+    cats = Category.objects.all()
+
+    context = {
+        'posts': posts,
+        'cats': cats,
+        'menu': menu,
+        'title': 'Главная страница',
+        'cat_selected': cat_id,
+    }
+
+    return render(request, 'blog/index.html', context=context)
 
 
 def archive(request, year):
