@@ -1,0 +1,9 @@
+<!--D:\Python\django\elvand\moloshop\blog\templates\blog\list_categories.html-->
+<!--Параметр "cats" возвращает функция show_categories() (D:\Python\django\elvand\moloshop\blog\templatetags\blog_tags.py)-->
+{% for c in cats %}
+	{% if c.pk == cat_selected %}
+		<li class="selected">{{c.name}}</li>
+	{% else %}
+		<li><a href="{{ c.get_absolute_url }}">{{c.name}}</a></li>
+	{% endif %}
+{% endfor %}
