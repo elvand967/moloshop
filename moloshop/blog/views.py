@@ -1,7 +1,7 @@
 # D:\Python\django\elvand\moloshop\blog\views.py
 
 from django.http import HttpResponse, HttpResponseNotFound, Http404
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 
 from .models import *
 
@@ -80,5 +80,13 @@ def pageNotFound(request, exception):
     return HttpResponseNotFound('<h1>Страница не найдена</h1>')
 
 def show_post(request, post_id):
-    return HttpResponse(f"<h2>Отображение статьи с id = </h2><h1>{post_id}</h1>")
+    post = get_object_or_404(Blog, pk=post_id)
+    context = {
+        'post': post,
+        'menu': menu,
+        'title': post.title,
+        'cat_selected': 1,
+    }
+    return render(request, 'blog/post.html', context=context)
+
 
