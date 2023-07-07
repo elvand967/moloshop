@@ -12,7 +12,7 @@ def get_categories(filter=None):
     if not filter:
         return Category.objects.all()
     else:
-        return Category.objects.filter(pk=filter)
+        return Category.objects.filter(slug=filter)
 
 
 @register.inclusion_tag('blog/list_categories.html')
