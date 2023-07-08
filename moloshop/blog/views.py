@@ -6,6 +6,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .forms import AddPostForm
 from .models import *
 
+from django.views.generic import ListView
+
 menu = [{'title': "О сайте", 'url_name': 'about'},
         {'title': "Добавить статью", 'url_name': 'add_page'},
         {'title': "Обратная связь", 'url_name': 'contact'},
@@ -13,19 +15,35 @@ menu = [{'title': "О сайте", 'url_name': 'about'},
         ]
 
 
-def index(request):
-    posts = Blog.objects.all()
-    # cats = Category.objects.all()
+# def index(request):
+#     posts = Blog.objects.all()
+#     # cats = Category.objects.all()
+#
+#     context = {
+#         'posts': posts,
+#         # 'cats': cats,
+#         'menu': menu,
+#         'title': 'Главная страница',
+#         'cat_selected': 0,
+#     }
+#
+#     return render(request, 'blog/index.html', context=context)
 
-    context = {
-        'posts': posts,
-        # 'cats': cats,
-        'menu': menu,
-        'title': 'Главная страница',
-        'cat_selected': 0,
-    }
 
-    return render(request, 'blog/index.html', context=context)
+class BlogHome(ListView):
+    model = Blog
+    template_name = 'blog/index.html'
+    context_object_name = 'posts'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Главная страница'
+        context['cat_selected'] = 0
+        context['menu'] = menu
+        return context
+
+    def get_queryset(self):
+        return Blog.objects.filter(is_published=True)
 
 
 def about(request):
@@ -52,11 +70,27 @@ def login(request):
     return HttpResponse("<h1>Авторизация</h1>")
 
 
-def categories(request, cat):
-    if (request.GET):
-        print(request.GET)
+# def categories(request, cat):
+#     if (request.GET):
+#         print(request.GET)
+#
+#     return HttpResponse(f"<h1>Статьи по категориям {cat}</h1>")
 
-    return HttpResponse(f"<h1>Статьи по категориям {cat}</h1>")
+
+class BlogCategory(ListView):
+    model = Blog
+    template_name = 'blog/index.html'
+    context_object_name = 'posts'
+
+    def get_queryset(self):
+        return Blog.objects.filter(cat__slug=self.kwargs['cat_slug'], is_published=True)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Категория - ' + str(context['posts'][0].cat)
+        context['menu'] = menu
+        context['cat_selected'] = context['posts'][0].cat_id
+        return context
 
 
 def show_category(request, cat_id):
