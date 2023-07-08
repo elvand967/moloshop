@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .forms import AddPostForm
 from .models import *
 
-from django.views.generic import ListView
+from django.views.generic import ListView, DetailView
 
 menu = [{'title': "О сайте", 'url_name': 'about'},
         {'title': "Добавить статью", 'url_name': 'add_page'},
@@ -131,3 +131,16 @@ def show_post(request, post_slug):
         'cat_selected': 1,
     }
     return render(request, 'blog/post.html', context=context)
+
+
+class ShowPost(DetailView):
+    model = Blog
+    template_name = 'blog/post.html'
+    slug_url_kwarg = 'post_slug'
+    context_object_name = 'post'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = context['post']
+        context['menu'] = menu
+        return context
