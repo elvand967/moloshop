@@ -1,83 +1,57 @@
 # D:\Python\django\elvand\moloshop\blog\views.py
-
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse_lazy
 
 from .forms import AddPostForm
 from .models import *
 
-from django.views.generic import ListView, DetailView
+from django.views.generic import ListView, DetailView, CreateView
+from .utils import *
 
-menu = [{'title': "О сайте", 'url_name': 'about'},
-        {'title': "Добавить статью", 'url_name': 'add_page'},
-        {'title': "Обратная связь", 'url_name': 'contact'},
-        {'title': "Войти", 'url_name': 'login'},
-        ]
+from django.contrib.auth.mixins import LoginRequiredMixin
 
-
-# def index(request):
-#     posts = Blog.objects.all()
-#     # cats = Category.objects.all()
-#
-#     context = {
-#         'posts': posts,
-#         # 'cats': cats,
-#         'menu': menu,
-#         'title': 'Главная страница',
-#         'cat_selected': 0,
-#     }
-#
-#     return render(request, 'blog/index.html', context=context)
-
-
-class BlogHome(ListView):
+class BlogHome(DataMixin, ListView):
     model = Blog
     template_name = 'blog/index.html'
     context_object_name = 'posts'
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Главная страница'
-        context['cat_selected'] = 0
-        context['menu'] = menu
+        c_def = self.get_user_context(title="Главная страница")
+        context = dict(list(context.items()) + list(c_def.items()))
         return context
 
     def get_queryset(self):
         return Blog.objects.filter(is_published=True)
 
 
-def about(request):
-    return render(request, 'blog/about.html', {'menu': menu, 'title': 'О сайте'})
+class AddPage(LoginRequiredMixin, DataMixin, CreateView):
+    form_class = AddPostForm
+    template_name = 'blog/addpage.html'
+    # login_url = reverse_lazy('home')
+    raise_exception = True
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        c_def = self.get_user_context(title="Добавление статьи")
+        context = dict(list(context.items()) + list(c_def.items()))
+        return context
 
 
-def addpage(request):
-    if request.method == 'POST':
-        form = AddPostForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect('home')
-    else:
-        # form = AddPostForm(request.POST, request.FILES) # в таком виде срабатывает проверка до заполнения формы
-        form = AddPostForm()
-    return render(request, 'blog/addpage.html', {'form': form, 'menu': menu, 'title': 'Добавление статьи'})
+class ShowPost(DataMixin, DetailView):
+    model = Blog
+    template_name = 'blog/post.html'
+    slug_url_kwarg = 'post_slug'
+    context_object_name = 'post'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        c_def = self.get_user_context(title=context['post'])
+        return dict(list(context.items()) + list(c_def.items()))
 
 
-def contact(request):
-    return HttpResponse("<h1>Обратная связь</h1>")
-
-
-def login(request):
-    return HttpResponse("<h1>Авторизация</h1>")
-
-
-# def categories(request, cat):
-#     if (request.GET):
-#         print(request.GET)
-#
-#     return HttpResponse(f"<h1>Статьи по категориям {cat}</h1>")
-
-
-class BlogCategory(ListView):
+class BlogCategory(DataMixin, ListView):
     model = Blog
     template_name = 'blog/index.html'
     context_object_name = 'posts'
@@ -87,26 +61,24 @@ class BlogCategory(ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Категория - ' + str(context['posts'][0].cat)
-        context['menu'] = menu
-        context['cat_selected'] = context['posts'][0].cat_id
-        return context
+        c_def = self.get_user_context(title='Категория - ' + str(context['posts'][0].cat),
+                                      cat_selected=context['posts'][0].cat_id)
+        return dict(list(context.items()) + list(c_def.items()))
 
 
-def show_category(request, cat_id):
-    posts = Blog.objects.filter(cat_id=cat_id)
 
-    if len(posts) == 0:
-        raise Http404()
 
-    context = {
-        'posts': posts,
-        'menu': menu,
-        'title': 'Отображение по рубрикам',
-        'cat_selected': cat_id,
-    }
+# @login_required              # теперь страница доступна только для зарегистрированных/авторезированных пользователей
+def about(request):
+    return render(request, 'blog/about.html', {'menu': menu, 'title': 'О сайте'})
 
-    return render(request, 'blog/index.html', context=context)
+
+def contact(request):
+    return HttpResponse("<h1>Обратная связь</h1>")
+
+
+def login(request):
+    return HttpResponse("<h1>Авторизация</h1>")
 
 
 def archive(request, year):
@@ -122,25 +94,5 @@ def pageNotFound(request, exception):
     return HttpResponseNotFound('<h1>Страница не найдена</h1>')
 
 
-def show_post(request, post_slug):
-    post = get_object_or_404(Blog, slug=post_slug)
-    context = {
-        'post': post,
-        'menu': menu,
-        'title': post.title,
-        'cat_selected': 1,
-    }
-    return render(request, 'blog/post.html', context=context)
 
 
-class ShowPost(DetailView):
-    model = Blog
-    template_name = 'blog/post.html'
-    slug_url_kwarg = 'post_slug'
-    context_object_name = 'post'
-
-    def get_context_data(self, *, object_list=None, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = context['post']
-        context['menu'] = menu
-        return context
