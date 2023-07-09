@@ -1,5 +1,6 @@
 # D:\Python\django\elvand\moloshop\blog\views.py
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
@@ -13,6 +14,7 @@ from .utils import *
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 class BlogHome(DataMixin, ListView):
+    # paginate_by = 2
     model = Blog
     template_name = 'blog/index.html'
     context_object_name = 'posts'
@@ -70,7 +72,12 @@ class BlogCategory(DataMixin, ListView):
 
 # @login_required              # теперь страница доступна только для зарегистрированных/авторезированных пользователей
 def about(request):
-    return render(request, 'blog/about.html', {'menu': menu, 'title': 'О сайте'})
+    contact_list = Blog.objects.all()
+    paginator = Paginator(contact_list, 2)
+
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'blog/about.html', {'page_obj': page_obj, 'menu': menu, 'title': 'О сайте'})
 
 
 def contact(request):
