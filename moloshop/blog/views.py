@@ -10,16 +10,15 @@ from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 
-from .forms import AddPostForm, RegisterUserForm, LoginUserForm
+from .forms import AddPostForm, RegisterUserForm, LoginUserForm, ContactForm
 from .models import *
 
-from django.views.generic import ListView, DetailView, CreateView
+from django.views.generic import ListView, DetailView, CreateView, FormView
 from .utils import *
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 class BlogHome(DataMixin, ListView):
-    # paginate_by = 2
     model = Blog
     template_name = 'blog/index.html'
     context_object_name = 'posts'
@@ -31,7 +30,7 @@ class BlogHome(DataMixin, ListView):
         return context
 
     def get_queryset(self):
-        return Blog.objects.filter(is_published=True)
+        return Blog.objects.filter(is_published=True).select_related('cat')
 
 
 class AddPage(LoginRequiredMixin, DataMixin, CreateView):
@@ -64,12 +63,16 @@ class BlogCategory(DataMixin, ListView):
     context_object_name = 'posts'
 
     def get_queryset(self):
-        return Blog.objects.filter(cat__slug=self.kwargs['cat_slug'], is_published=True)
+        # return Blog.objects.filter(cat__slug=self.kwargs['cat_slug'], is_published=True)
+        return Blog.objects.filter(cat__slug=self.kwargs['cat_slug'], is_published=True).select_related('cat')
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        c_def = self.get_user_context(title='Категория - ' + str(context['posts'][0].cat),
-                                      cat_selected=context['posts'][0].cat_id)
+        # c_def = self.get_user_context(title='Категория - ' + str(context['posts'][0].cat),
+        #                               cat_selected=context['posts'][0].cat_id)
+        c = Category.objects.get(slug=self.kwargs['cat_slug'])
+        c_def = self.get_user_context(title='Категория ' + str(c.name),
+                                      cat_selected=c.pk)
         return dict(list(context.items()) + list(c_def.items()))
 
 
@@ -110,7 +113,24 @@ class LoginUser(DataMixin, LoginView):
 
 def logout_user(request):
     logout(request)
-    return redirect('login')
+    return redirect('home')
+
+
+class ContactFormView(DataMixin, FormView):
+    form_class = ContactForm
+    template_name = 'blog/contact.html'
+    success_url = reverse_lazy('home')
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        c_def = self.get_user_context(title="Обратная связь")
+        return dict(list(context.items()) + list(c_def.items()))
+
+    def form_valid(self, form):
+        print(form.cleaned_data)
+        return redirect('home')
+
+
 
 
 # @login_required              # теперь страница доступна только для зарегистрированных/авторезированных пользователей
